@@ -15,26 +15,38 @@ pip install tinybot
 | `BOT_ACCESS_TOKEN` | Yes | Telegram bot token |
 | `GROUP_CHAT_ID` | Yes | Telegram group for notifications |
 | `ERROR_GROUP_CHAT_ID` | Yes | Telegram group for errors and startup |
+| `PRIVATE_KEY` | No | Private key for onchain execution |
 
 ## Quick Start
 
 ```python
 import asyncio
+import os
 from tinybot import TinyBot, multicall, notify_group_chat
 
 ERC20_ABI = [...]
+STRATEGY_ABI = [...]
 
 async def on_transfer(bot, log):
     print(f"{log.args.sender} -> {log.args.receiver}: {log.args.value}")
     await notify_group_chat(f"Transfer from {log.args.sender}")
 
-async def check_balances(bot):
-    for pair in bot.state.active_items:
-        # ...
-        pass
+async def check_and_tend(bot):
+    strategy = bot.w3.eth.contract(address="0x...", abi=STRATEGY_ABI)
+    needs_tend, _ = strategy.functions.tendTrigger().call()
+    if needs_tend:
+        tx_hash = bot.executor.execute(
+            strategy.functions.tend(),
+            gas_limit=5_000_000,
+        )
+        await notify_group_chat(f"Tend submitted: {tx_hash}")
 
 async def main():
-    bot = TinyBot("https://eth.llamarpc.com", name="my bot")
+    bot = TinyBot(
+        rpc_url=os.environ["RPC_URL"],
+        name="my bot",
+        private_key=os.environ.get("PRIVATE_KEY", ""),
+    )
 
     bot.listen(
         name="transfers",
@@ -46,7 +58,7 @@ async def main():
         notify_errors=True,
     )
 
-    bot.every(3600, check_balances, notify_errors=True)
+    bot.every(3600, check_and_tend, notify_errors=True)
 
     await bot.run()
 
