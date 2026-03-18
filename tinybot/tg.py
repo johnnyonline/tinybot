@@ -12,7 +12,7 @@ def _require_env(name: str) -> str:
 
 BOT_ACCESS_TOKEN = _require_env("BOT_ACCESS_TOKEN")
 GROUP_CHAT_ID = int(_require_env("GROUP_CHAT_ID"))
-ERROR_GROUP_CHAT_ID = int(_require_env("ERROR_GROUP_CHAT_ID"))
+DEV_GROUP_CHAT_ID = int(_require_env("DEV_GROUP_CHAT_ID"))
 
 
 async def notify_group_chat(

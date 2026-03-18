@@ -7,7 +7,7 @@ from web3 import Web3
 
 from tinybot.executor import Executor
 from tinybot.state import State
-from tinybot.tg import ERROR_GROUP_CHAT_ID, notify_group_chat
+from tinybot.tg import DEV_GROUP_CHAT_ID, notify_group_chat
 from tinybot.types import EventHandler, EventListener, PeriodicTask, TaskHandler
 from tinybot.utils import event_id, event_signature
 
@@ -100,7 +100,7 @@ class TinyBot:
     async def _handle_error(self, e: Exception, name: str, notify: bool) -> None:
         print(f"[{name}] error: {e}")
         if notify:
-            await notify_group_chat(f"❌ [{name}] {e}", chat_id=ERROR_GROUP_CHAT_ID)
+            await notify_group_chat(f"❌ [{name}] {e}", chat_id=DEV_GROUP_CHAT_ID)
 
     async def _process_logs(self, listener: EventListener, from_block: int, to_block: int) -> None:
         topic = self.w3.keccak(text=listener.signature)
@@ -161,7 +161,7 @@ class TinyBot:
     async def run(self, tick: int = 10) -> None:
         await notify_group_chat(
             f"🟢 <b>{self.name} started</b>",
-            chat_id=ERROR_GROUP_CHAT_ID,
+            chat_id=DEV_GROUP_CHAT_ID,
         )
 
         while True:

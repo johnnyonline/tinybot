@@ -14,7 +14,7 @@ pip install tinybot
 |---|---|---|
 | `BOT_ACCESS_TOKEN` | Yes | Telegram bot token |
 | `GROUP_CHAT_ID` | Yes | Telegram group for notifications |
-| `ERROR_GROUP_CHAT_ID` | Yes | Telegram group for errors and startup |
+| `DEV_GROUP_CHAT_ID` | Yes | Telegram group for errors and startup |
 | `PRIVATE_KEY` | No | Private key for onchain execution |
 
 ## Quick Start
@@ -76,7 +76,7 @@ Creates a bot instance.
 - `bot.executor` — `Executor` instance if `private_key` is provided, else `None`
 - `bot.name` — used in logs and Telegram startup message
 
-On `run()`, sends a startup message to `ERROR_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
+On `run()`, sends a startup message to `DEV_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
 
 ---
 
@@ -220,4 +220,4 @@ Access `bot.w3`, `bot.state`, `bot.executor`, and `bot.get_listener()` from any 
 
 ## Error Handling
 
-When `notify_errors=True`, exceptions are caught and sent to `ERROR_GROUP_CHAT_ID` as `[name] error message`. The bot continues running.
+When `notify_errors=True`, exceptions are caught and sent to `DEV_GROUP_CHAT_ID` as `[name] error message`. The bot continues running.
