@@ -1,0 +1,31 @@
+[project]
+name = "tinybot"
+version = "0.1.0"
+description = "Minimal Python framework for building crypto bots"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "web3==7.14.1",
+    "eth-abi==5.2.0",
+    "eth-account==0.13.7",
+    "python-telegram-bot==22.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tinybot*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+lint.select = ["E", "F", "I", "W"]
+fix = true
+lint.ignore = ['E501']
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
