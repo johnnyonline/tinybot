@@ -38,7 +38,7 @@ class TinyBot:
     ) -> EventListener:
         if not addresses:
             raise ValueError(f"listener '{name}': addresses cannot be empty")
-        if any(l.name == name for l in self._listeners):
+        if any(listener.name == name for listener in self._listeners):
             raise ValueError(f"listener '{name}' already registered")
 
         signature = event_signature(abi, event)
@@ -78,9 +78,9 @@ class TinyBot:
     # -------------------------------------------------------------------------
 
     def get_listener(self, name: str) -> EventListener:
-        for l in self._listeners:
-            if l.name == name:
-                return l
+        for listener in self._listeners:
+            if listener.name == name:
+                return listener
         raise ValueError(f"listener '{name}' not found")
 
     # -------------------------------------------------------------------------
@@ -107,12 +107,14 @@ class TinyBot:
         decoder = self.w3.eth.contract(address=listener.addresses[0], abi=listener.abi)
         event_name = listener.signature.split("(")[0]
 
-        raw_logs = self.w3.eth.get_logs({
-            "fromBlock": from_block,
-            "toBlock": to_block,
-            "address": listener.addresses,
-            "topics": [topic],
-        })
+        raw_logs = self.w3.eth.get_logs(
+            {
+                "fromBlock": from_block,
+                "toBlock": to_block,
+                "address": listener.addresses,
+                "topics": [topic],
+            }
+        )
 
         for raw_log in raw_logs:
             event = getattr(decoder.events, event_name)()

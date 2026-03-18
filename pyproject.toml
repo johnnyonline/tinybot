@@ -1,5 +1,5 @@
 [project]
-name = "tinybot"
+name = "tinybot-eth"
 version = "0.1.0"
 description = "Minimal Python framework for building crypto bots"
 readme = "README.md"

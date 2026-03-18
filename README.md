@@ -5,7 +5,7 @@ Minimal Python framework for building crypto bots.
 ## Installation
 
 ```bash
-pip install tinybot
+pip install tinybot-eth
 ```
 
 ## Environment Variables
