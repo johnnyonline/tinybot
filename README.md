@@ -18,7 +18,14 @@ pip install tinybot-eth
 | `PRIVATE_KEY` | No | Private key for onchain execution |
 
 ## Quick Start
+```python
+bot = TinyBot(rpc_url, name="my bot")
 
+bot.listen(event="AuctionKicked", handler=on_kick, ...)
+bot.every(180, check_expired)
+
+await bot.run()
+```
 ```python
 import asyncio
 import os
@@ -49,16 +56,14 @@ async def main():
     )
 
     bot.listen(
-        name="transfers",
         event="Transfer",
         addresses=["0x..."],
         abi=ERC20_ABI,
         handler=on_transfer,
         poll_interval=180,
-        notify_errors=True,
     )
 
-    bot.every(3600, check_and_tend, notify_errors=True)
+    bot.every(3600, check_and_tend)
 
     await bot.run()
 
@@ -86,14 +91,14 @@ Register an event listener.
 
 ```python
 bot.listen(
-    name="kicks",            # unique name
     event="AuctionKicked",   # event name (must exist in ABI)
     addresses=["0x..."],     # contracts to monitor
     abi=[...],               # ABI containing the event
     handler=on_kick,         # async fn(bot, log)
+    name="kicks",            # defaults to handler.__name__ (optional)
     poll_interval=180,       # seconds between polls (default: 180)
     block_buffer=5,          # re-scan buffer in blocks (default: 5)
-    notify_errors=True,      # send errors to Telegram (default: False)
+    notify_errors=True,      # send errors to Telegram (default: True)
 )
 ```
 
@@ -104,12 +109,12 @@ The event signature is derived from the ABI at registration time. Raises `ValueE
 
 ---
 
-### `bot.every(interval, handler, name="", notify_errors=False) -> PeriodicTask`
+### `bot.every(interval, handler, name="", notify_errors=True) -> PeriodicTask`
 
 Register a periodic task.
 
 ```python
-bot.every(3600, check_expired, notify_errors=True)
+bot.every(3600, check_expired)
 ```
 
 Handler signature: `async fn(bot)`
@@ -220,4 +225,4 @@ Access `bot.w3`, `bot.state`, `bot.executor`, and `bot.get_listener()` from any 
 
 ## Error Handling
 
-When `notify_errors=True`, exceptions are caught and sent to `DEV_GROUP_CHAT_ID` as `[name] error message`. The bot continues running.
+Enabled by default. Exceptions are caught and sent to `DEV_GROUP_CHAT_ID` as `[name] error message`. The bot continues running. Set `notify_errors=False` to disable.

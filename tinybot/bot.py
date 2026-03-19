@@ -27,15 +27,16 @@ class TinyBot:
 
     def listen(
         self,
-        name: str,
         event: str,
         addresses: list[str],
         abi: list[dict[str, Any]],
         handler: EventHandler,
+        name: str = "",
         poll_interval: int = 180,
         block_buffer: int = 5,
-        notify_errors: bool = False,
+        notify_errors: bool = True,
     ) -> EventListener:
+        name = name or handler.__name__
         if not addresses:
             raise ValueError(f"listener '{name}': addresses cannot be empty")
         if any(listener.name == name for listener in self._listeners):
@@ -62,10 +63,13 @@ class TinyBot:
         interval: int,
         handler: TaskHandler,
         name: str = "",
-        notify_errors: bool = False,
+        notify_errors: bool = True,
     ) -> PeriodicTask:
+        name = name or handler.__name__
+        if any(task.name == name for task in self._tasks):
+            raise ValueError(f"task '{name}' already registered")
         task = PeriodicTask(
-            name=name or handler.__name__,
+            name=name,
             interval=interval,
             handler=handler,
             notify_errors=notify_errors,

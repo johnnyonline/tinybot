@@ -22,7 +22,7 @@ class EventListener:
     handler: EventHandler
     poll_interval: int = 180
     block_buffer: int = 5
-    notify_errors: bool = False
+    notify_errors: bool = True
     _last_run: float = 0
     _w3: Web3 | None = None
 
@@ -42,5 +42,5 @@ class PeriodicTask:
     name: str
     interval: int
     handler: TaskHandler
-    notify_errors: bool = False
+    notify_errors: bool = True
     _last_run: float = 0
