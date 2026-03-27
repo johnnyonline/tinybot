@@ -1,6 +1,6 @@
 [project]
 name = "tinybot-eth"
-version = "0.4.0"
+version = "0.5.0"
 description = "Minimal Python framework for building crypto bots"
 readme = "README.md"
 requires-python = ">=3.12"

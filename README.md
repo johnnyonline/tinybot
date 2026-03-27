@@ -167,14 +167,17 @@ tx_hash = bot.executor.execute(
     max_fee_gwei=100,         # default: 100
     max_priority_fee_gwei=0,  # default: 0
     simulate=True,            # default: True — dry-run via eth_call before sending
+    wait=120,                 # default: 120 — seconds to wait for mining (0 = fire and forget)
 )
 ```
 
 - `executor.address` — signer address
 - `executor.balance` — signer ETH balance in wei
-- `executor.execute(call, ...)` — sign and broadcast a transaction, returns tx hash immediately (fire and forget)
+- `executor.execute(call, ...)` — sign and broadcast a transaction, returns tx hash hex string
 - `gas_limit=0` (default) — auto-estimates gas with 1.5x buffer; pass a value to override
+- `max_fee_gwei` / `max_priority_fee_gwei` — accept floats (e.g. `0.1`)
 - `simulate=True` (default) — runs `call.call()` first; reverts raise before the tx is sent
+- `wait=120` (default) — wait up to N seconds for the tx to be mined; `0` for fire and forget
 
 ---
 

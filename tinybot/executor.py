@@ -20,10 +20,11 @@ class Executor:
         self,
         call,
         gas_limit: int = 0,
-        max_fee_gwei: int = 100,
-        max_priority_fee_gwei: int = 0,
+        max_fee_gwei: float = 100,
+        max_priority_fee_gwei: float = 0,
         value: int = 0,
         simulate: bool = True,
+        wait: int = 120,
     ) -> str:
         if simulate:
             call.call({"from": self._account.address, "value": value})
@@ -43,4 +44,6 @@ class Executor:
         )
         signed = self._w3.eth.account.sign_transaction(tx, self._account.key)
         tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
+        if wait > 0:
+            self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=wait)
         return tx_hash.hex()
