@@ -23,7 +23,11 @@ class Executor:
         max_fee_gwei: int = 100,
         max_priority_fee_gwei: int = 3,
         value: int = 0,
+        simulate: bool = True,
     ) -> str:
+        if simulate:
+            call.call({"from": self._account.address, "value": value})
+
         tx = call.build_transaction(
             {
                 "from": self._account.address,

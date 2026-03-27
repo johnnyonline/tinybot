@@ -166,12 +166,14 @@ tx_hash = bot.executor.execute(
     gas_limit=5_000_000,
     max_fee_gwei=100,
     max_priority_fee_gwei=3,
+    simulate=True,  # default: True — dry-run via eth_call before sending
 )
 ```
 
 - `executor.address` — signer address
 - `executor.balance` — signer ETH balance in wei
 - `executor.execute(call, ...)` — sign and broadcast a transaction, returns tx hash immediately (fire and forget)
+- `simulate=True` (default) — runs `call.call()` first; reverts raise before the tx is sent
 
 ---
 
