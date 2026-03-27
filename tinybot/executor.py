@@ -19,14 +19,17 @@ class Executor:
     def execute(
         self,
         call,
-        gas_limit: int = 500_000,
+        gas_limit: int = 0,
         max_fee_gwei: int = 100,
-        max_priority_fee_gwei: int = 3,
+        max_priority_fee_gwei: int = 0,
         value: int = 0,
         simulate: bool = True,
     ) -> str:
         if simulate:
             call.call({"from": self._account.address, "value": value})
+
+        if gas_limit == 0:
+            gas_limit = int(call.estimate_gas({"from": self._account.address, "value": value}) * 1.5)
 
         tx = call.build_transaction(
             {
