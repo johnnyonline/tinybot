@@ -44,3 +44,11 @@ class PeriodicTask:
     handler: TaskHandler
     notify_errors: bool = True
     _last_run: float = 0
+
+
+@dataclass
+class CronTask:
+    name: str
+    expression: str
+    handler: TaskHandler
+    notify_errors: bool = True

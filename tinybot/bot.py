@@ -8,7 +8,9 @@ from web3 import Web3
 from tinybot.executor import Executor
 from tinybot.state import State
 from tinybot.tg import DEV_GROUP_CHAT_ID, notify_group_chat
-from tinybot.types import EventHandler, EventListener, PeriodicTask, TaskHandler
+from croniter import croniter
+
+from tinybot.types import CronTask, EventHandler, EventListener, PeriodicTask, TaskHandler
 from tinybot.utils import event_id, event_signature
 
 
@@ -20,6 +22,7 @@ class TinyBot:
         self.executor = Executor(self.w3, private_key) if private_key else None
         self._listeners: list[EventListener] = []
         self._tasks: list[PeriodicTask] = []
+        self._crons: list[tuple[CronTask, croniter]] = []
 
     # -------------------------------------------------------------------------
     # Registration
@@ -75,6 +78,26 @@ class TinyBot:
             notify_errors=notify_errors,
         )
         self._tasks.append(task)
+        return task
+
+    def cron(
+        self,
+        expression: str,
+        handler: TaskHandler,
+        name: str = "",
+        notify_errors: bool = True,
+    ) -> CronTask:
+        name = name or handler.__name__
+        if any(task.name == name for task, _ in self._crons):
+            raise ValueError(f"cron '{name}' already registered")
+        task = CronTask(
+            name=name,
+            expression=expression,
+            handler=handler,
+            notify_errors=notify_errors,
+        )
+        cron = croniter(expression, datetime.now())
+        self._crons.append((task, cron))
         return task
 
     # -------------------------------------------------------------------------
@@ -149,7 +172,7 @@ class TinyBot:
         except Exception as e:
             await self._handle_error(e, listener.name, listener.notify_errors)
 
-    async def _poll_task(self, task: PeriodicTask) -> None:
+    async def _poll_periodic(self, task: PeriodicTask) -> None:
         now = time.time()
         if now - task._last_run < task.interval:
             return
@@ -159,6 +182,16 @@ class TinyBot:
             await task.handler(self)
         except Exception as e:
             await self._handle_error(e, task.name, task.notify_errors)
+
+    async def _poll_cron(self, task: CronTask, cron: croniter) -> None:
+        now = datetime.now()
+        next_run = cron.get_current(datetime)
+        if now >= next_run:
+            try:
+                await task.handler(self)
+            except Exception as e:
+                await self._handle_error(e, task.name, task.notify_errors)
+            cron.get_next(datetime)
 
     # -------------------------------------------------------------------------
     # Run
@@ -175,5 +208,7 @@ class TinyBot:
             for listener in self._listeners:
                 await self._poll_listener(listener)
             for task in self._tasks:
-                await self._poll_task(task)
+                await self._poll_periodic(task)
+            for task, cron in self._crons:
+                await self._poll_cron(task, cron)
             await asyncio.sleep(tick)

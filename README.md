@@ -23,6 +23,7 @@ bot = TinyBot(rpc_url, name="my bot")
 
 bot.listen(event="AuctionKicked", handler=on_kick, ...)
 bot.every(180, check_expired)
+bot.cron("0 * * * *", hourly_check)
 
 await bot.run()
 ```
@@ -115,6 +116,19 @@ Register a periodic task.
 
 ```python
 bot.every(3600, check_expired)
+```
+
+Handler signature: `async fn(bot)`
+
+---
+
+### `bot.cron(expression, handler, name="", notify_errors=True) -> CronTask`
+
+Register a cron-scheduled task. Uses standard cron expressions.
+
+```python
+bot.cron("0 * * * *", notify_ending_soon)      # every hour at :00
+bot.cron("*/30 * * * *", check_something)       # every 30 minutes
 ```
 
 Handler signature: `async fn(bot)`
