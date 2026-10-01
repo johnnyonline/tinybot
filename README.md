@@ -73,7 +73,7 @@ asyncio.run(main())
 
 ## API
 
-### `TinyBot(rpc_url, send_rpc_url="", name="tinybot", private_key="")`
+### `TinyBot(rpc_url, private_rpc_url="", name="tinybot", private_key="")`
 
 Creates a bot instance.
 
@@ -81,7 +81,7 @@ Creates a bot instance.
 - `bot.state` — `State` instance (see below)
 - `bot.executor` — `Executor` instance if `private_key` is provided, else `None`
 - `bot.name` — used in logs and Telegram startup message
-- `send_rpc_url` — optional endpoint used only to broadcast signed txs (e.g. `https://rpc.flashbots.net/fast`); reads stay on `rpc_url`
+- `private_rpc_url` — optional private relay (e.g. `https://rpc.flashbots.net/fast`), used only for txs sent with `execute(..., private=True)`; reads and public txs stay on `rpc_url`
 
 On `run()`, sends a startup message to `DEV_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
 
@@ -183,6 +183,7 @@ tx_hash = bot.executor.execute(
     max_priority_fee_gwei=0,  # default: 0
     simulate=True,            # default: True — dry-run via eth_call before sending
     wait=120,                 # default: 120 — seconds to wait for mining (0 = fire and forget)
+    private=False,            # default: False — True broadcasts via private_rpc_url
 )
 ```
 
@@ -194,7 +195,7 @@ tx_hash = bot.executor.execute(
 - `simulate=True` (default) — runs `call.call()` first; reverts raise before the tx is sent
 - `wait=120` (default) — wait up to N seconds for the tx to be mined; `0` for fire and forget
 - The nonce comes from the `pending` block, so a tx sent while an earlier one is unmined queues behind it
-- With `send_rpc_url` set, the signed tx is broadcast there; if that endpoint is unreachable, the same signed tx is broadcast via `rpc_url`
+- `private=False` (default) — broadcasts via `rpc_url`; `private=True` broadcasts via `private_rpc_url` and raises if it is not set. There is no fallback between the two, so a private tx never goes public
 
 ---
 
