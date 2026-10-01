@@ -15,11 +15,12 @@ from tinybot.utils import event_id, event_signature
 
 
 class TinyBot:
-    def __init__(self, rpc_url: str, name: str = "tinybot", private_key: str = ""):
+    def __init__(self, rpc_url: str, send_rpc_url: str = "", name: str = "tinybot", private_key: str = ""):
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         self.name = name
         self.state = State()
-        self.executor = Executor(self.w3, private_key) if private_key else None
+        send_w3 = Web3(Web3.HTTPProvider(send_rpc_url)) if send_rpc_url else None
+        self.executor = Executor(self.w3, private_key, send_w3) if private_key else None
         self._listeners: list[EventListener] = []
         self._tasks: list[PeriodicTask] = []
         self._crons: list[tuple[CronTask, croniter]] = []

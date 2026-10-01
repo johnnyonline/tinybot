@@ -73,7 +73,7 @@ asyncio.run(main())
 
 ## API
 
-### `TinyBot(rpc_url, name="tinybot", private_key="")`
+### `TinyBot(rpc_url, send_rpc_url="", name="tinybot", private_key="")`
 
 Creates a bot instance.
 
@@ -81,6 +81,7 @@ Creates a bot instance.
 - `bot.state` — `State` instance (see below)
 - `bot.executor` — `Executor` instance if `private_key` is provided, else `None`
 - `bot.name` — used in logs and Telegram startup message
+- `send_rpc_url` — optional endpoint used only to broadcast signed txs (e.g. `https://rpc.flashbots.net/fast`); reads stay on `rpc_url`
 
 On `run()`, sends a startup message to `DEV_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
 
@@ -187,11 +188,13 @@ tx_hash = bot.executor.execute(
 
 - `executor.address` — signer address
 - `executor.balance` — signer ETH balance in wei
-- `executor.execute(call, ...)` — sign and broadcast a transaction, returns tx hash hex string
+- `executor.execute(call, ...)` — sign and broadcast a transaction, returns the `0x`-prefixed tx hash
 - `gas_limit=0` (default) — auto-estimates gas with 1.5x buffer; pass a value to override
 - `max_fee_gwei` / `max_priority_fee_gwei` — accept floats (e.g. `0.1`)
 - `simulate=True` (default) — runs `call.call()` first; reverts raise before the tx is sent
 - `wait=120` (default) — wait up to N seconds for the tx to be mined; `0` for fire and forget
+- The nonce comes from the `pending` block, so a tx sent while an earlier one is unmined queues behind it
+- With `send_rpc_url` set, the signed tx is broadcast there; if that endpoint is unreachable, the same signed tx is broadcast via `rpc_url`
 
 ---
 
@@ -208,7 +211,7 @@ In-memory state, available via `bot.state`.
 
 ---
 
-### `multicall(w3, calls) -> list`
+### `multicall(w3, calls, allow_failure=False, batch_size=200) -> list`
 
 Batch contract reads via [Multicall3](https://github.com/mds1/multicall).
 
@@ -217,7 +220,15 @@ symbol, decimals = multicall(bot.w3, [
     token.functions.symbol(),
     token.functions.decimals(),
 ])
+
+# one result per call; None where the call reverted or returned nothing
+keepers = multicall(bot.w3, [s.functions.keeper() for s in strategies], allow_failure=True)
 ```
+
+- `allow_failure=False` (default) — any reverting call reverts the whole batch
+- `allow_failure=True` — a reverting call, empty return data, or undecodable data yields `None`
+- `batch_size=200` — calls are split into chunks of this size to stay under RPC `eth_call` gas caps
+- Functions returning tuples/structs are decoded
 
 ---
 

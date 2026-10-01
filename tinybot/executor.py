@@ -1,11 +1,13 @@
 from eth_account import Account
 from eth_account.signers.local import LocalAccount
+from requests.exceptions import RequestException
 from web3 import Web3
 
 
 class Executor:
-    def __init__(self, w3: Web3, private_key: str):
+    def __init__(self, w3: Web3, private_key: str, send_w3: Web3 | None = None):
         self._w3 = w3
+        self._send_w3 = send_w3  # optional separate endpoint for broadcasting (e.g. a private relay)
         self._account: LocalAccount = Account.from_key(private_key)
 
     @property
@@ -35,7 +37,7 @@ class Executor:
         tx = call.build_transaction(
             {
                 "from": self._account.address,
-                "nonce": self._w3.eth.get_transaction_count(self._account.address),
+                "nonce": self._w3.eth.get_transaction_count(self._account.address, "pending"),
                 "gas": gas_limit,
                 "maxFeePerGas": self._w3.to_wei(max_fee_gwei, "gwei"),
                 "maxPriorityFeePerGas": self._w3.to_wei(max_priority_fee_gwei, "gwei"),
@@ -43,7 +45,15 @@ class Executor:
             }
         )
         signed = self._w3.eth.account.sign_transaction(tx, self._account.key)
-        tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
+        if self._send_w3 is None:
+            tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
+        else:
+            try:
+                tx_hash = self._send_w3.eth.send_raw_transaction(signed.raw_transaction)
+            except RequestException as e:
+                # Send endpoint unreachable: broadcast the same signed tx (same hash and nonce) publicly
+                print(f"send endpoint failed, falling back to public rpc: {e}")
+                tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
         if wait > 0:
             self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=wait)
-        return tx_hash.hex()
+        return tx_hash.to_0x_hex()
