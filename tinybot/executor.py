@@ -27,6 +27,7 @@ class Executor:
         simulate: bool = True,
         wait: int = 120,
         private: bool = False,
+        replace_pending: bool = False,
     ) -> str:
         if private and self._private_w3 is None:
             raise ValueError("private tx requested but no private_rpc_url is set")
@@ -40,7 +41,9 @@ class Executor:
         tx = call.build_transaction(
             {
                 "from": self._account.address,
-                "nonce": self._w3.eth.get_transaction_count(self._account.address, "pending"),
+                "nonce": self._w3.eth.get_transaction_count(
+                    self._account.address, "latest" if replace_pending else "pending"
+                ),
                 "gas": gas_limit,
                 "maxFeePerGas": self._w3.to_wei(max_fee_gwei, "gwei"),
                 "maxPriorityFeePerGas": self._w3.to_wei(max_priority_fee_gwei, "gwei"),

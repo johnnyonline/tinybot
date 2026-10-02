@@ -80,10 +80,24 @@ Creates a bot instance.
 - `bot.w3` — `web3.Web3` instance
 - `bot.state` — `State` instance (see below)
 - `bot.executor` — `Executor` instance if `private_key` is provided, else `None`
+- `bot.executors` — `dict[str, Executor]` of all signers; the `private_key` one is `"default"`
 - `bot.name` — used in logs and Telegram startup message
 - `private_rpc_url` — optional private relay (e.g. `https://rpc.flashbots.net/fast`), used only for txs sent with `execute(..., private=True)`; reads and public txs stay on `rpc_url`
 
 On `run()`, sends a startup message to `DEV_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
+
+---
+
+### `bot.add_executor(name, private_key) -> Executor`
+
+Register an additional signer. It shares `bot.w3` and `private_rpc_url`, and is added to `bot.executors`. Separate signers have separate nonces, so their txs never queue behind each other.
+
+```python
+bot = TinyBot(rpc_url, name="my bot", private_key=os.environ["TEND_KEY"])  # bot.executor
+harvester = bot.add_executor("harvest", os.environ["HARVEST_KEY"])
+```
+
+Raises `ValueError` on a duplicate name.
 
 ---
 
@@ -184,6 +198,7 @@ tx_hash = bot.executor.execute(
     simulate=True,            # default: True — dry-run via eth_call before sending
     wait=120,                 # default: 120 — seconds to wait for mining (0 = fire and forget)
     private=False,            # default: False — True broadcasts via private_rpc_url
+    replace_pending=False,    # default: False — True reuses the nonce of an unmined tx to replace it
 )
 ```
 
@@ -194,7 +209,7 @@ tx_hash = bot.executor.execute(
 - `max_fee_gwei` / `max_priority_fee_gwei` — accept floats (e.g. `0.1`)
 - `simulate=True` (default) — runs `call.call()` first; reverts raise before the tx is sent
 - `wait=120` (default) — wait up to N seconds for the tx to be mined; `0` for fire and forget
-- The nonce comes from the `pending` block, so a tx sent while an earlier one is unmined queues behind it
+- `replace_pending=False` (default) — nonce from the `pending` block, so a tx sent while an earlier one is unmined queues behind it; `replace_pending=True` — nonce from the `latest` block, so the tx replaces the unmined one (the node requires a ~10% higher fee)
 - `private=False` (default) — broadcasts via `rpc_url`; `private=True` broadcasts via `private_rpc_url` and raises if it is not set. There is no fallback between the two, so a private tx never goes public
 
 ---
