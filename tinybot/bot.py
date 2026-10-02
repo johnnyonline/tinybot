@@ -16,7 +16,7 @@ from tinybot.utils import event_id, event_signature
 
 class TinyBot:
     def __init__(self, rpc_url: str, private_rpc_url: str = "", name: str = "tinybot", private_key: str = ""):
-        self.w3 = Web3(Web3.HTTPProvider(rpc_url))
+        self.w3 = Web3(Web3.HTTPProvider(rpc_url, cache_allowed_requests=True, cacheable_requests={"eth_chainId"}))
         self.name = name
         self.state = State()
         self._private_w3 = Web3(Web3.HTTPProvider(private_rpc_url)) if private_rpc_url else None
