@@ -2,17 +2,13 @@ import os
 
 from telegram import Bot
 
-
-def _require_env(name: str) -> str:
-    val = os.getenv(name, "")
-    if not val:
-        raise RuntimeError(f"!{name}")
-    return val
+BOT_ACCESS_TOKEN = os.getenv("BOT_ACCESS_TOKEN", "")
+GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "0"))
+DEV_GROUP_CHAT_ID = int(os.getenv("DEV_GROUP_CHAT_ID", "0"))
 
 
-BOT_ACCESS_TOKEN = _require_env("BOT_ACCESS_TOKEN")
-GROUP_CHAT_ID = int(_require_env("GROUP_CHAT_ID"))
-DEV_GROUP_CHAT_ID = int(_require_env("DEV_GROUP_CHAT_ID"))
+def telegram_enabled() -> bool:
+    return bool(BOT_ACCESS_TOKEN)
 
 
 async def notify_group_chat(
@@ -21,6 +17,8 @@ async def notify_group_chat(
     chat_id: int = GROUP_CHAT_ID,
     disable_web_page_preview: bool = True,
 ) -> None:
+    if not BOT_ACCESS_TOKEN or not chat_id:
+        return
     try:
         bot = Bot(token=BOT_ACCESS_TOKEN)
         await bot.send_message(

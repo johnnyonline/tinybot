@@ -12,9 +12,9 @@ pip install tinybot-eth
 
 | Variable | Required | Description |
 |---|---|---|
-| `BOT_ACCESS_TOKEN` | Yes | Telegram bot token |
-| `GROUP_CHAT_ID` | Yes | Telegram group for notifications |
-| `DEV_GROUP_CHAT_ID` | Yes | Telegram group for errors and startup |
+| `BOT_ACCESS_TOKEN` | No | Telegram bot token. Unset: `notify_group_chat` does nothing and `telegram_enabled()` is `False` |
+| `GROUP_CHAT_ID` | No | Telegram group for notifications |
+| `DEV_GROUP_CHAT_ID` | No | Telegram group for errors and startup |
 | `PRIVATE_KEY` | No | Private key for onchain execution |
 
 ## Quick Start
@@ -250,7 +250,13 @@ keepers = multicall(bot.w3, [s.functions.keeper() for s in strategies], allow_fa
 
 ### `notify_group_chat(text, parse_mode="HTML", chat_id=GROUP_CHAT_ID)`
 
-Send a Telegram message. HTML parse mode by default.
+Send a Telegram message. HTML parse mode by default. Does nothing when `BOT_ACCESS_TOKEN` or the chat id is unset.
+
+---
+
+### `telegram_enabled() -> bool`
+
+`True` when `BOT_ACCESS_TOKEN` is set. Use it to skip work whose only output is a Telegram message.
 
 ---
 
