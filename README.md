@@ -80,24 +80,10 @@ Creates a bot instance.
 - `bot.w3` — `web3.Web3` instance
 - `bot.state` — `State` instance (see below)
 - `bot.executor` — `Executor` instance if `private_key` is provided, else `None`
-- `bot.executors` — `dict[str, Executor]` of all signers; the `private_key` one is `"default"`
 - `bot.name` — used in logs and Telegram startup message
 - `private_rpc_url` — optional private relay (e.g. `https://rpc.flashbots.net/fast`), used only for txs sent with `execute(..., private=True)`; reads and public txs stay on `rpc_url`
 
 On `run()`, sends a startup message to `DEV_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
-
----
-
-### `bot.add_executor(name, private_key) -> Executor`
-
-Register an additional signer. It shares `bot.w3` and `private_rpc_url`, and is added to `bot.executors`. Separate signers have separate nonces, so their txs never queue behind each other.
-
-```python
-bot = TinyBot(rpc_url, name="my bot", private_key=os.environ["TEND_KEY"])  # bot.executor
-harvester = bot.add_executor("harvest", os.environ["HARVEST_KEY"])
-```
-
-Raises `ValueError` on a duplicate name.
 
 ---
 

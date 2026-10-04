@@ -21,7 +21,6 @@ class TinyBot:
         self.state = State()
         self._private_w3 = Web3(Web3.HTTPProvider(private_rpc_url)) if private_rpc_url else None
         self.executor = Executor(self.w3, private_key, self._private_w3) if private_key else None
-        self.executors: dict[str, Executor] = {"default": self.executor} if self.executor else {}
         self._listeners: list[EventListener] = []
         self._tasks: list[PeriodicTask] = []
         self._crons: list[tuple[CronTask, croniter]] = []
@@ -29,13 +28,6 @@ class TinyBot:
     # -------------------------------------------------------------------------
     # Registration
     # -------------------------------------------------------------------------
-
-    def add_executor(self, name: str, private_key: str) -> Executor:
-        if name in self.executors:
-            raise ValueError(f"executor '{name}' already registered")
-        executor = Executor(self.w3, private_key, self._private_w3)
-        self.executors[name] = executor
-        return executor
 
     def listen(
         self,
