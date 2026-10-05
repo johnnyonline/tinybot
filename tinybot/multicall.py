@@ -1,4 +1,5 @@
 from eth_abi import decode as decode_abi
+from eth_utils import get_abi_output_types
 from web3 import Web3
 
 # Multicall3 — same address on all chains
@@ -33,14 +34,28 @@ MULTICALL3_ABI = [
 ]
 
 
-def multicall(w3: Web3, calls: list) -> list:
-    """Batch contract calls. calls = list of ContractFunction objects."""
+def multicall(w3: Web3, calls: list, allow_failure: bool = False, batch_size: int = 200) -> list:
+    """Batch contract calls. calls = list of ContractFunction objects.
+
+    With allow_failure=True, a reverting call (or one that returns no data) yields None instead of
+    reverting the whole batch. Calls are sent in chunks of batch_size to stay under eth_call gas caps.
+    """
     mc = w3.eth.contract(address=MULTICALL3, abi=MULTICALL3_ABI)
-    encoded = [(call.address, False, call._encode_transaction_data()) for call in calls]
-    results = mc.functions.aggregate3(encoded).call()
     decoded = []
-    for call, (_, data) in zip(calls, results):
-        types = [o["type"] for o in call.abi["outputs"]]
-        result = decode_abi(types, data)
-        decoded.append(result[0] if len(result) == 1 else result)
+    for i in range(0, len(calls), batch_size):
+        chunk = calls[i : i + batch_size]
+        encoded = [(call.address, allow_failure, call._encode_transaction_data()) for call in chunk]
+        results = mc.functions.aggregate3(encoded).call()
+        for call, (success, data) in zip(chunk, results):
+            if allow_failure and (not success or not data):
+                decoded.append(None)
+                continue
+            try:
+                result = decode_abi(get_abi_output_types(call.abi), data)
+            except Exception:
+                if not allow_failure:
+                    raise
+                decoded.append(None)
+                continue
+            decoded.append(result[0] if len(result) == 1 else result)
     return decoded

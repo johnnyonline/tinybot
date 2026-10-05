@@ -4,8 +4,9 @@ from web3 import Web3
 
 
 class Executor:
-    def __init__(self, w3: Web3, private_key: str):
+    def __init__(self, w3: Web3, private_key: str, private_w3: Web3 | None = None):
         self._w3 = w3
+        self._private_w3 = private_w3  # optional private relay, used only for txs sent with `private=True`
         self._account: LocalAccount = Account.from_key(private_key)
 
     @property
@@ -25,7 +26,12 @@ class Executor:
         value: int = 0,
         simulate: bool = True,
         wait: int = 120,
+        private: bool = False,
+        replace_pending: bool = False,
     ) -> str:
+        if private and self._private_w3 is None:
+            raise ValueError("private tx requested but no private_rpc_url is set")
+
         if simulate:
             call.call({"from": self._account.address, "value": value})
 
@@ -35,7 +41,9 @@ class Executor:
         tx = call.build_transaction(
             {
                 "from": self._account.address,
-                "nonce": self._w3.eth.get_transaction_count(self._account.address),
+                "nonce": self._w3.eth.get_transaction_count(
+                    self._account.address, "latest" if replace_pending else "pending"
+                ),
                 "gas": gas_limit,
                 "maxFeePerGas": self._w3.to_wei(max_fee_gwei, "gwei"),
                 "maxPriorityFeePerGas": self._w3.to_wei(max_priority_fee_gwei, "gwei"),
@@ -43,7 +51,8 @@ class Executor:
             }
         )
         signed = self._w3.eth.account.sign_transaction(tx, self._account.key)
-        tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
+        send_w3 = self._private_w3 if private else self._w3
+        tx_hash = send_w3.eth.send_raw_transaction(signed.raw_transaction)
         if wait > 0:
             self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=wait)
-        return tx_hash.hex()
+        return tx_hash.to_0x_hex()

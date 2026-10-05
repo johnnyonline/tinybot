@@ -12,9 +12,9 @@ pip install tinybot-eth
 
 | Variable | Required | Description |
 |---|---|---|
-| `BOT_ACCESS_TOKEN` | Yes | Telegram bot token |
-| `GROUP_CHAT_ID` | Yes | Telegram group for notifications |
-| `DEV_GROUP_CHAT_ID` | Yes | Telegram group for errors and startup |
+| `BOT_ACCESS_TOKEN` | No | Telegram bot token. Unset: `notify_group_chat` does nothing and `telegram_enabled()` is `False` |
+| `GROUP_CHAT_ID` | No | Telegram group for notifications |
+| `DEV_GROUP_CHAT_ID` | No | Telegram group for errors and startup |
 | `PRIVATE_KEY` | No | Private key for onchain execution |
 
 ## Quick Start
@@ -73,7 +73,7 @@ asyncio.run(main())
 
 ## API
 
-### `TinyBot(rpc_url, name="tinybot", private_key="")`
+### `TinyBot(rpc_url, private_rpc_url="", name="tinybot", private_key="")`
 
 Creates a bot instance.
 
@@ -81,6 +81,7 @@ Creates a bot instance.
 - `bot.state` — `State` instance (see below)
 - `bot.executor` — `Executor` instance if `private_key` is provided, else `None`
 - `bot.name` — used in logs and Telegram startup message
+- `private_rpc_url` — optional private relay (e.g. `https://rpc.flashbots.net/fast`), used only for txs sent with `execute(..., private=True)`; reads and public txs stay on `rpc_url`
 
 On `run()`, sends a startup message to `DEV_GROUP_CHAT_ID` and prints a polling heartbeat every tick.
 
@@ -182,16 +183,20 @@ tx_hash = bot.executor.execute(
     max_priority_fee_gwei=0,  # default: 0
     simulate=True,            # default: True — dry-run via eth_call before sending
     wait=120,                 # default: 120 — seconds to wait for mining (0 = fire and forget)
+    private=False,            # default: False — True broadcasts via private_rpc_url
+    replace_pending=False,    # default: False — True reuses the nonce of an unmined tx to replace it
 )
 ```
 
 - `executor.address` — signer address
 - `executor.balance` — signer ETH balance in wei
-- `executor.execute(call, ...)` — sign and broadcast a transaction, returns tx hash hex string
+- `executor.execute(call, ...)` — sign and broadcast a transaction, returns the `0x`-prefixed tx hash
 - `gas_limit=0` (default) — auto-estimates gas with 1.5x buffer; pass a value to override
 - `max_fee_gwei` / `max_priority_fee_gwei` — accept floats (e.g. `0.1`)
 - `simulate=True` (default) — runs `call.call()` first; reverts raise before the tx is sent
 - `wait=120` (default) — wait up to N seconds for the tx to be mined; `0` for fire and forget
+- `replace_pending=False` (default) — nonce from the `pending` block, so a tx sent while an earlier one is unmined queues behind it; `replace_pending=True` — nonce from the `latest` block, so the tx replaces the unmined one (the node requires a ~10% higher fee)
+- `private=False` (default) — broadcasts via `rpc_url`; `private=True` broadcasts via `private_rpc_url` and raises if it is not set. There is no fallback between the two, so a private tx never goes public
 
 ---
 
@@ -208,7 +213,7 @@ In-memory state, available via `bot.state`.
 
 ---
 
-### `multicall(w3, calls) -> list`
+### `multicall(w3, calls, allow_failure=False, batch_size=200) -> list`
 
 Batch contract reads via [Multicall3](https://github.com/mds1/multicall).
 
@@ -217,13 +222,27 @@ symbol, decimals = multicall(bot.w3, [
     token.functions.symbol(),
     token.functions.decimals(),
 ])
+
+# one result per call; None where the call reverted or returned nothing
+keepers = multicall(bot.w3, [s.functions.keeper() for s in strategies], allow_failure=True)
 ```
+
+- `allow_failure=False` (default) — any reverting call reverts the whole batch
+- `allow_failure=True` — a reverting call, empty return data, or undecodable data yields `None`
+- `batch_size=200` — calls are split into chunks of this size to stay under RPC `eth_call` gas caps
+- Functions returning tuples/structs are decoded
 
 ---
 
 ### `notify_group_chat(text, parse_mode="HTML", chat_id=GROUP_CHAT_ID)`
 
-Send a Telegram message. HTML parse mode by default.
+Send a Telegram message. HTML parse mode by default. Does nothing when `BOT_ACCESS_TOKEN` or the chat id is unset.
+
+---
+
+### `telegram_enabled() -> bool`
+
+`True` when `BOT_ACCESS_TOKEN` is set. Use it to skip work whose only output is a Telegram message.
 
 ---
 
